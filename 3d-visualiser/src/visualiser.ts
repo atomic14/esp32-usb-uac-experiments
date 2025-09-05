@@ -173,8 +173,9 @@ export class WaterfallSpectrogram {
     // Audio
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false }, video: false })
     this.mediaStream = stream
-    const AudioCtx: typeof AudioContext = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
-      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    type AudioContextConstructor = { new (contextOptions?: AudioContextOptions): AudioContext }
+    const AudioCtx: AudioContextConstructor | undefined = window.AudioContext ?? window.webkitAudioContext
+    if (!AudioCtx) throw new Error('Web Audio API not supported')
     const audioContext = new AudioCtx()
     this.audioContext = audioContext
     this.contextStartTime = audioContext.currentTime
@@ -201,8 +202,9 @@ export class WaterfallSpectrogram {
     if (this.disposed) throw new Error('Instance disposed')
     if (this.animationFrameId) this.stop()
     const arrayBuf = await file.arrayBuffer()
-    const AudioCtx: typeof AudioContext = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
-      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    type AudioContextConstructor = { new (contextOptions?: AudioContextOptions): AudioContext }
+    const AudioCtx: AudioContextConstructor | undefined = window.AudioContext ?? window.webkitAudioContext
+    if (!AudioCtx) throw new Error('Web Audio API not supported')
     const audioContext = new AudioCtx()
     this.audioContext = audioContext
     this.contextStartTime = audioContext.currentTime
