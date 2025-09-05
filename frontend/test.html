@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Serial Packet Debug</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 16px; }
+      header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      h1 { font-size: 18px; margin: 0 8px 0 0; }
+      button { padding: 8px 12px; border-radius: 6px; border: 1px solid #8883; background: #eee; cursor: pointer; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      label { display: inline-flex; align-items: center; gap: 6px; }
+      .row { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+      .panel { flex: 1 1 480px; border: 1px solid #8883; border-radius: 8px; padding: 12px; }
+      .panel h2 { font-size: 16px; margin: 0 0 8px 0; }
+      .status { font: 12px/1.4 monospace; white-space: pre-wrap; }
+      pre { background: #000; color: #0f0; padding: 8px; border-radius: 6px; max-height: 50vh; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Serial Packet Debug</h1>
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+      <label><input id="crcCheck" type="checkbox" checked /> Verify CRC</label>
+    </header>
+
+    <div class="row">
+      <div class="panel">
+        <h2>Stats</h2>
+        <div id="stats" class="status"></div>
+      </div>
+      <div class="panel">
+        <h2>Log</h2>
+        <button id="clearLogBtn">Clear log</button>
+        <pre id="log"></pre>
+      </div>
+    </div>
+
+    <script type="module" src="./src/test.ts"></script>
+  </body>
+  </html>
+
+

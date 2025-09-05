@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebSerial Audio Studio</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: radial-gradient(1200px 800px at 0% -10%, #1b2a44 0%, #0c1220 55%),
+               radial-gradient(1000px 600px at 100% 110%, #341d3d 0%, #0c1220 55%);
+        --panel: rgba(255,255,255,0.06);
+        --panel-border: rgba(255,255,255,0.10);
+        --muted: rgba(255,255,255,0.7);
+        --text: #e8eef8;
+        --brand: #4aa3ff;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 24px; color: var(--text); background: var(--bg) fixed; }
+      header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+      h1 { font-size: 20px; margin: 0 8px 0 0; letter-spacing: 0.5px; }
+      .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      button { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--panel-border); background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.1)); color: var(--text); cursor: pointer; backdrop-filter: blur(6px); }
+      button:hover { border-color: rgba(255,255,255,0.2); }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .chip { font: 12px/1.8 monospace; padding: 2px 8px; border: 1px solid var(--panel-border); border-radius: 999px; background: rgba(255,255,255,0.05); display: inline-flex; gap: 6px; align-items: center; }
+      .chip.ok { color: #a7f3d0; }
+      .chip.bad { color: #fecaca; }
+      .chip.muted { color: var(--muted); }
+      .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-top: 16px; }
+      .panel { grid-column: span 6; border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; background: var(--panel); box-shadow: 0 10px 30px rgba(0,0,0,0.3); backdrop-filter: blur(10px); }
+      .panel.full { grid-column: 1 / -1; }
+      .panel h2 { font-size: 14px; margin: 0 0 10px 0; letter-spacing: 0.4px; color: #c7d2fe; }
+      canvas { width: 100%; height: 320px; background: #0b0f14; display: block; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04); }
+      .status { margin-top: 8px; font: 12px/1.4 monospace; opacity: 0.85; }
+      .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+      input[type="number"] { width: 110px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(0,0,0,0.25); color: var(--text); }
+      .legend { font-size: 12px; opacity: 0.75; }
+      .metrics { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .vu { position: relative; width: 200px; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+      .vu > span { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, #22c55e, #f59e0b 60%, #ef4444); transition: width .15s ease; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>WebSerial Audio Studio</h1>
+      <span class="chip muted" id="wsSupport">WebSerial: checking…</span>
+      <div class="toolbar">
+        <label>Source
+          <select id="sourceSelect">
+            <option value="serial">Serial</option>
+            <option value="mic" selected>Microphone</option>
+          </select>
+        </label>
+        <label id="micPickerWrap" style="display:none">Microphone
+          <select id="micSelect">
+            <option value="">Default</option>
+          </select>
+        </label>
+        <button id="connectBtn">Connect</button>
+        <button id="disconnectBtn" disabled>Disconnect</button>
+        <label>Sample rate <input id="samplerate" type="number" value="48000" min="1000" step="1000" /></label>
+        <label><input id="crcCheck" type="checkbox" checked /> Verify CRC</label>
+        <label>Scope gain
+          <input id="scopeGain" type="range" min="0.25" max="100" step="0.25" value="1" />
+        </label>
+        <span class="chip muted" id="scopeGainVal">1.0×</span>
+        <label>Colormap
+          <select id="colormap">
+            <option value="turbo" selected>Turbo</option>
+            <option value="viridis">Viridis</option>
+            <option value="inferno">Inferno</option>
+            <option value="greys">Greys</option>
+          </select>
+        </label>
+        <button id="startRecBtn" disabled>Start recording</button>
+        <button id="stopRecBtn" disabled>Stop recording</button>
+        <button id="downloadBtn" disabled>Download WAV</button>
+        <button id="helpBtn" title="Show serial protocol help">Help</button>
+        <div class="metrics">
+          <span class="chip" id="connState">Disconnected</span>
+          <span class="chip" id="bpsChip">0.0 kB/s</span>
+          <span class="chip" id="pktChip">0 pkts</span>
+          <span class="chip" id="crcChip">CRC: 0</span>
+          <div class="vu"><span id="vuFill"></span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="row">
+      <div class="panel">
+        <h2>Oscilloscope</h2>
+        <canvas id="scope" width="1024" height="300"></canvas>
+        <div class="status" id="scopeStatus"></div>
+      </div>
+      <div class="panel">
+        <h2>Spectrogram</h2>
+        <canvas id="spec" width="800" height="300"></canvas>
+        <div class="legend">Low → High frequency (vertical). New frames draw at the right.</div>
+      </div>
+      <div class="panel">
+        <h2>Classic Spectrum</h2>
+        <canvas id="bars" width="800" height="300"></canvas>
+        <div class="legend">1980s-style bar spectrum with peak hold.</div>
+      </div>
+      <div class="panel">
+        <h2>Pitch / Tuner</h2>
+        <canvas id="tuner" width="800" height="160"></canvas>
+        <div class="status"><span id="note">—</span> · <span id="pitchHz">— Hz</span> · conf <span id="pitchConf">0.00</span></div>
+      </div>
+    </div>
+
+    <div class="status" id="globalStatus"></div>
+
+    <div class="row">
+      <div class="panel full">
+        <h2>Debug</h2>
+        <div id="debugStats" class="status"></div>
+        <pre id="debugLog" style="max-height:200px; overflow:auto; background:#000; color:#0f0; padding:8px; border-radius:6px; margin-top:8px"></pre>
+        <button id="clearLogBtn">Clear log</button>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+
+    <!-- Help modal -->
+    <div id="helpModal" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); z-index:1000">
+      <div style="max-width:800px; width:92%; background: var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,0.5); color:var(--text); backdrop-filter: blur(10px)">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px">
+          <h2 style="margin:0; font-size:16px; letter-spacing:0.4px; color:#c7d2fe">Serial packet format</h2>
+          <button id="helpCloseBtn">Close</button>
+        </div>
+        <div style="font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--text);">
+<pre style="white-space:pre-wrap; margin:0; background:#0b0f14; padding:12px; border-radius:8px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05)">
+Binary framing per packet (little-endian):
+
+  [0]     SYNC: 0xA6
+  [1..2]  LEN:  uint16 payload length in bytes (PCM16, so samples*2)
+  [3..6]  SEQ:  uint32 monotonically increasing packet counter
+  [7..10] USEC: uint32 timestamp (microseconds) at framing time
+  [..]    PAYLOAD: LEN bytes of PCM16 little-endian audio samples
+  [..]    CRC16: uint16 CRC-16/CCITT over header+payload
+
+Notes:
+- PCM payload is signed 16-bit little-endian mono. Sample rate is selectable in UI.
+- CRC is CRC-16/CCITT (poly 0x1021, init 0xFFFF, no XORout). Can be disabled in UI verification.
+- The frontend searches for SYNC and validates length/CRC before decoding.
+- Typical device: ESP32-S3 USB CDC; configured default rate 48000 Hz.
+</pre>
+        </div>
+      </div>
+    </div>
+  </body>
+  </html>
+
+
