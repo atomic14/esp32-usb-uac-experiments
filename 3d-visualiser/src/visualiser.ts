@@ -25,7 +25,6 @@ export class WaterfallSpectrogram {
   private animationFrameId: number | null = null
   private audioContext: AudioContext | null = null
   private analyser: AnalyserNode | null = null
-  private fileSource: AudioBufferSourceNode | null = null
   private mediaStream: MediaStream | null = null
   private disposed = false
 
@@ -174,7 +173,9 @@ export class WaterfallSpectrogram {
     // Audio
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false }, video: false })
     this.mediaStream = stream
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const AudioCtx: typeof AudioContext = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
+      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    const audioContext = new AudioCtx()
     this.audioContext = audioContext
     this.contextStartTime = audioContext.currentTime
     const analyser = audioContext.createAnalyser()
@@ -193,14 +194,16 @@ export class WaterfallSpectrogram {
     this.rebuildTimeAxis()
     this.renderer.render(this.scene, this.camera)
 
-    this.loop()
+    this.animationFrameId = requestAnimationFrame(this.loop)
   }
 
   async startWithFile(file: File): Promise<void> {
     if (this.disposed) throw new Error('Instance disposed')
     if (this.animationFrameId) this.stop()
     const arrayBuf = await file.arrayBuffer()
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const AudioCtx: typeof AudioContext = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
+      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    const audioContext = new AudioCtx()
     this.audioContext = audioContext
     this.contextStartTime = audioContext.currentTime
     const buffer = await audioContext.decodeAudioData(arrayBuf)
@@ -214,11 +217,10 @@ export class WaterfallSpectrogram {
     source.connect(analyser)
     analyser.connect(audioContext.destination)
     this.analyser = analyser
-    this.fileSource = source
+    // Keep a local reference if needed later; currently unused
     source.start(0)
     source.onended = () => {
       // Keep the visualizer running; zero incoming rows (silence)
-      this.fileSource = null
       // Leave analyser in place; loop() will just draw silence until a new file/mic starts
     }
     // Pre-fill with silence for a full-screen surface before playback
@@ -228,7 +230,7 @@ export class WaterfallSpectrogram {
     this.rebuildTimeAxis()
     this.renderer.render(this.scene, this.camera)
 
-    this.loop()
+    this.animationFrameId = requestAnimationFrame(this.loop)
   }
 
   stop(): void {
@@ -389,26 +391,7 @@ export class WaterfallSpectrogram {
     }
   }
 
-  private makeTextSprite(text: string): THREE.Sprite {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')!
-    const pad = 8
-    ctx.font = '28px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto'
-    const metrics = ctx.measureText(text)
-    canvas.width = Math.max(64, Math.ceil(metrics.width) + pad * 2)
-    canvas.height = 40
-    const ctx2 = canvas.getContext('2d')!
-    ctx2.font = ctx.font
-    ctx2.fillStyle = 'rgba(0,0,0,0.35)'
-    ctx2.fillRect(0, 0, canvas.width, canvas.height)
-    ctx2.fillStyle = '#ffffff'
-    ctx2.textBaseline = 'middle'
-    ctx2.fillText(text, pad, canvas.height / 2)
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.minFilter = THREE.LinearFilter
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true })
-    return new THREE.Sprite(mat)
-  }
+  
 
   getElapsedSeconds(): number {
     if (this.audioContext) {
@@ -418,15 +401,7 @@ export class WaterfallSpectrogram {
     return ((performance.now() - (this.lastNow ?? performance.now())) / 1000)
   }
 
-  private niceStep(step: number): number {
-    const pow10 = Math.pow(10, Math.floor(Math.log10(step)))
-    const n = step / pow10
-    let m = 1
-    if (n > 5) m = 10
-    else if (n > 2) m = 5
-    else if (n > 1) m = 2
-    return m * pow10
-  }
+  
 
   setPalette(palette: 'turbo' | 'viridis' | 'inferno' | 'jet'): void {
     this.options.palette = palette

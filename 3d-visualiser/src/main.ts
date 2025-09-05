@@ -66,7 +66,8 @@ startBtn.addEventListener('click', async () => {
     await spectrogram.start()
     stopBtn.disabled = false
   } catch (err) {
-    console.error(err)
+    const message = err instanceof Error ? err.message : String(err)
+    alert(message)
     startBtn.disabled = false
   }
 })
@@ -92,7 +93,8 @@ fileInput.addEventListener('change', async () => {
 })
 
 paletteSelect.addEventListener('change', () => {
-  spectrogram.setPalette(paletteSelect.value as any)
+  const val = paletteSelect.value as 'turbo'|'viridis'|'inferno'|'jet'
+  spectrogram.setPalette(val)
 })
 
 gammaInput.addEventListener('input', () => {

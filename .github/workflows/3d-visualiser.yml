@@ -33,7 +33,11 @@ jobs:
       
     - name: Type check
       working-directory: ./3d-visualiser
-      run: npx tsc --noEmit
+      run: npm run typecheck
+      
+    - name: Lint code
+      working-directory: ./3d-visualiser
+      run: npm run lint -- --format=compact
       
     - name: Build project
       working-directory: ./3d-visualiser
