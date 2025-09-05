@@ -1,6 +1,11 @@
-# Microphone Audio Processing Suite
+[![Frontend Build and Test](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/frontend.yml/badge.svg)](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/frontend.yml)
+[![3D Visualiser Build and Test](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/3d-visualiser.yml/badge.svg)](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/3d-visualiser.yml)
+[![Serial Mic Build and Test](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/serial-mic.yml/badge.svg)](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/serial-mic.yml)
+[![USB Audio Build and Test](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/usb-audio.yml/badge.svg)](https://github.com/atomic14/esp32-usb-uac-experiments/actions/workflows/usb-audio.yml)
 
-A comprehensive collection of audio processing tools and hardware implementations for real-time microphone data capture, analysis, and visualization.
+# ESP32 Audio Experiements
+
+A A collection of audio processing tools and hardware for the ESP32.
 
 ## 🎯 Overview
 
