@@ -31,12 +31,21 @@ jobs:
       working-directory: ./frontend
       run: npm ci
       
+    - name: Type check
+      working-directory: ./frontend
+      run: npm run typecheck
+      
+    - name: Lint code
+      working-directory: ./frontend
+      run: npm run lint -- --format=compact
+      
     - name: Build project
       working-directory: ./frontend
       run: npm run build
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
+      
       with:
         name: frontend-dist
         path: frontend/dist/

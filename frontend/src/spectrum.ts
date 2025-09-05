@@ -26,6 +26,9 @@ export class BarSpectrum {
   private levels: Float32Array;  // 0..1
   private peaks: Float32Array;   // 0..1
   private lastDraw = 0;
+  private segments: number;
+  private segmentGapPx: number;
+  private glow: boolean;
 
   constructor(private canvas: HTMLCanvasElement, opts: BarSpectrumOptions = {}) {
     const ctx = canvas.getContext('2d');

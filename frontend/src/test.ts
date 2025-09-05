@@ -31,7 +31,7 @@ async function onConnect(){
     await port.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none', bufferSize: 16384 });
     try {
       // Assert DTR; some CDC stacks send BREAK when DTR is deasserted
-      // @ts-ignore
+      // @ts-expect-error setSignals may not be available on all implementations
       await port.setSignals({ dataTerminalReady: true, requestToSend: false, break: false });
     } catch {}
     reader = port.readable!.getReader();

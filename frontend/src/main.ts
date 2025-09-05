@@ -67,8 +67,7 @@ const barSpec = new BarSpectrum(barsCanvas, { bands: 31, fftSize: 1024, minDb: -
 const parser = new PacketParser(() => crcCheckEl.checked, onPcm, (m)=>log(m));
 
 let pktCount = 0;
-let lastPktTs = 0;
-let crcErrors = 0;
+const crcErrors = 0;
 let bps = 0;
 // VU meter state (true-RMS with ~50 ms time constant)
 let vuRms2 = 0; // running mean-square in 0..1
@@ -77,15 +76,14 @@ const VU_MIN_DB = -80; // floor
 
 function onPcm(pcm: Int16Array) {
   pktCount++;
-  lastPktTs = performance.now();
   if ((pktCount & 0x3F) === 0) debugStats.textContent = `packets: ${pktCount}`;
   const gain = scopeGainEl ? Number(scopeGainEl.value) : 1;
   if (scopeGainVal) scopeGainVal.textContent = `${gain.toFixed(2)}×`;
   drawScope(scopeCtx, scopeCanvas, pcm, gain);
   const sr = sourceMode === 'mic' ? (mic.getSampleRate() || Number(samplerateEl.value) || 48000) : (Number(samplerateEl.value) || 48000);
-  drawSpectrogram(specCtx, specCanvas, pcm, sr, (colormapEl?.value as any) || 'turbo');
+  const palette: 'turbo'|'viridis'|'inferno'|'greys' = (colormapEl?.value as 'turbo'|'viridis'|'inferno'|'greys') ?? 'turbo';
+  drawSpectrogram(specCtx, specCanvas, pcm, sr, palette);
   // update classic spectrum
-  const now = performance.now();
   const dt = 16 / 1000; // approx frame delta; fine for smoothing
   barSpec.update(pcm, sr, dt);
   barSpec.draw();
@@ -110,7 +108,7 @@ function onPcm(pcm: Int16Array) {
 }
 
 connectBtn.addEventListener('click', async () => {
-  sourceMode = (sourceSelect?.value as any) || 'serial';
+  sourceMode = (sourceSelect?.value as 'serial'|'mic') || 'serial';
   if (sourceMode === 'serial') {
     reader = await requestAndOpen(115200);
     if (!reader) return;

@@ -95,14 +95,14 @@ export function createMicReader(): MicReader {
       // Connect to destination to keep context running; output remains silence
       workletNode.connect(audioContext.destination);
     } catch {
-      console.log('AudioWorklet not available, falling back to ScriptProcessor');
+      // AudioWorklet not available; fall back
       // Fallback to ScriptProcessor if AudioWorklet is unavailable
       const bufSize = 2048;
       processorNode = audioContext.createScriptProcessor(bufSize, 1, 1);
       processorNode.onaudioprocess = (e) => {
         const ch0 = e.inputBuffer.getChannelData(0);
         const pcm = new Int16Array(ch0.length);
-        for (let i=0;i<ch0.length;i++){ let v = Math.max(-1, Math.min(1, ch0[i])); pcm[i] = (v * 32767)|0; }
+        for (let i=0;i<ch0.length;i++){ const v = Math.max(-1, Math.min(1, ch0[i])); pcm[i] = (v * 32767)|0; }
         feed(pcm);
       };
       sourceNode.connect(processorNode);
