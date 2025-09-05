@@ -111,7 +111,7 @@ static void init_pcm_tx(void) {
             .bclk = SPEAKER_I2S_BCLK,
             .ws   = SPEAKER_I2S_LRC,
             .dout = SPEAKER_I2S_DOUT,
-            .din  = SPEAKER_I2S_GPIO_UNUSED,
+            .din  = I2S_GPIO_UNUSED,
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
