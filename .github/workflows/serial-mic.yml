@@ -1,0 +1,64 @@
+name: Serial Mic Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'serial-mic/**'
+      - '.github/workflows/serial-mic.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'serial-mic/**'
+      - '.github/workflows/serial-mic.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install PlatformIO Core
+      run: |
+        pip install platformio
+        pio --version
+        
+    - name: Build project
+      working-directory: ./serial-mic
+      run: pio run
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: serial-mic-firmware
+        path: serial-mic/.pio/build/esp32-s3-devkitc-1/firmware.bin
+        retention-days: 7
+        
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install PlatformIO Core
+      run: |
+        pip install platformio
+        pio --version
+        
+    - name: Run tests
+      working-directory: ./serial-mic
+      run: pio test

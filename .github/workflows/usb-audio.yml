@@ -1,0 +1,65 @@
+name: USB Audio Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'usb-audio/**'
+      - '.github/workflows/usb-audio.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'usb-audio/**'
+      - '.github/workflows/usb-audio.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Setup ESP-IDF
+      uses: espressif/setup-esp-idf@v1
+      with:
+        esp-idf-version: 'v5.1.2'
+        target: 'esp32s3'
+        
+    - name: Build project
+      working-directory: ./usb-audio
+      run: |
+        idf.py build
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: usb-audio-firmware
+        path: usb-audio/build/usb-mic2.bin
+        retention-days: 7
+        
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Setup ESP-IDF
+      uses: espressif/setup-esp-idf@v1
+      with:
+        esp-idf-version: 'v5.1.2'
+        target: 'esp32s3'
+        
+    - name: Run tests
+      working-directory: ./usb-audio
+      run: |
+        # Run any available tests
+        if [ -f "pytest_hello_world.py" ]; then
+          python -m pytest pytest_hello_world.py -v
+        fi

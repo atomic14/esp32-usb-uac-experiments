@@ -1,0 +1,47 @@
+name: 3D Visualiser Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '3d-visualiser/**'
+      - '.github/workflows/3d-visualiser.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '3d-visualiser/**'
+      - '.github/workflows/3d-visualiser.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 3d-visualiser/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: ./3d-visualiser
+      run: npm ci
+      
+    - name: Type check
+      working-directory: ./3d-visualiser
+      run: npx tsc --noEmit
+      
+    - name: Build project
+      working-directory: ./3d-visualiser
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: 3d-visualiser-dist
+        path: 3d-visualiser/dist/
+        retention-days: 7
