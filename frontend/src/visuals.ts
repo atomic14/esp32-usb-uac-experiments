@@ -91,20 +91,24 @@ export function drawSpectrogram(
   for (let k = 0; k < bins; k++) magDb[k] = 20 * Math.log10(Math.hypot(re[k], im[k]) * scale + 1e-12);
 
   const MIN_DB = -100, MAX_DB = 0;
-  const specWidth = canvas.width, specHeight = canvas.height;
-  // scroll left
-  ctx.drawImage(canvas, 1, 0, specWidth - 1, specHeight, 0, 0, specWidth - 1, specHeight);
-  // draw rightmost column via ImageData for speed
-  const column = ctx.createImageData(1, specHeight);
+  // Use device-pixel dimensions to avoid DPR transform mismatch
+  const wDev = canvas.width;
+  const hDev = canvas.height;
+  // Scroll left by 1 device pixel in an identity transform space
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(canvas, 1, 0, wDev - 1, hDev, 0, 0, wDev - 1, hDev);
+  // draw rightmost column via ImageData for speed (device pixels)
+  const column = ctx.createImageData(1, hDev);
   const data = column.data;
   const nyquist = Math.max(1, sampleRate / 2);
   const F_MIN = 50; // Hz floor for display (avoid DC dominance)
   const fMin = Math.min(nyquist * 0.9, Math.max(1, F_MIN));
   const logDen = Math.log(nyquist / fMin + 1e-12);
 
-  for (let y = 0; y < specHeight; y++) {
+  for (let y = 0; y < hDev; y++) {
     // Bottom low, top high with true log frequency scaling
-    const yTop = y / (specHeight - 1);    // 0 at top, 1 at bottom
+    const yTop = y / (hDev - 1);    // 0 at top, 1 at bottom
     const yBottom = 1 - yTop;             // 0 at bottom? actually 0 at top; bottom=1
     const f = fMin * Math.exp(yBottom * logDen); // f in [fMin, nyquist]
     const k = Math.min(bins - 1, Math.floor((f / nyquist) * (bins - 1)));
@@ -122,7 +126,8 @@ export function drawSpectrogram(
     const o4 = y * 4; // top row index (no vertical flip; top shows low freqs)
     data[o4]=rgb[0]; data[o4+1]=rgb[1]; data[o4+2]=rgb[2]; data[o4+3]=255;
   }
-  ctx.putImageData(column, specWidth - 1, 0);
+  ctx.putImageData(column, wDev - 1, 0);
+  ctx.restore();
 }
 
 
