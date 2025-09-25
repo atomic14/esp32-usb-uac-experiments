@@ -28,12 +28,30 @@ static i2s_chan_handle_t rx;
 static i2s_chan_handle_t tx;
 
 static bool is_muted = false;
-static uint32_t volume = 100;
+// volume is in dB
+static uint32_t volume = 0;
+static uint32_t volume_factor = 100;
 
 static esp_err_t usb_uac_device_output_cb(uint8_t *buf, size_t len, void *arg)
 {
     if (!tx) {
         return ESP_FAIL;
+    }
+    int16_t *samples = (int16_t *)buf;
+    for (size_t i = 0; i < len / 2; i++) {
+        if (is_muted) {
+            samples[i] = 0;
+            continue;
+        }
+        int32_t sample = samples[i];
+        // volume is in dB
+        sample = (sample * volume_factor) / 100;
+        if (sample > 32767) {
+            sample = 32767;
+        } else if (sample < -32768) {
+            sample = -32768;
+        }
+        samples[i] = (int16_t)sample;
     }
     size_t total_bytes_written = 0;
     while (total_bytes_written < len) {
@@ -54,16 +72,15 @@ static esp_err_t usb_uac_device_input_cb(uint8_t *buf, size_t len, size_t *bytes
 
 static void usb_uac_device_set_mute_cb(uint32_t mute, void *arg)
 {
-    // this seems to be handled by the OS - are we supposed to do anything with it?
     is_muted = mute;
 }
-
 static void usb_uac_device_set_volume_cb(uint32_t _volume, void *arg)
 {
-    // this also seems to be handled by the OS - are we supposed to do anything with it?
-    volume = _volume;
+    // see here for what is going on here: https://github.com/espressif/esp-iot-solution/blob/36d8130e8e880720108de2c31ce0779827b1bcd9/components/usb/usb_device_uac/usb_device_uac.c#L259
+    // _volume = (volume_db + 50) * 2
+    int volume_db = _volume / 2 - 50;
+    volume_factor = pow(10, volume_db / 20.0f) * 100.0f;
 }
-
 
 static void usb_uac_device_init(void)
 {
