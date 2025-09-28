@@ -22,6 +22,9 @@
 #define I2S_MIC_LEFT_RIGHT_CLOCK GPIO_NUM_10 // WS/LRCLK
 #define I2S_MIC_SERIAL_DATA GPIO_NUM_11      // DATA
 
+// active low LED
+#define RED_LED GPIO_NUM_4
+
 // ====================== I2S config (keep as-is unless wiring/rate changes)
 // ======================
 static i2s_config_t i2s_config = {
@@ -134,6 +137,7 @@ static void i2s_reader_task(void *arg) {
               I2S_CHANNEL_MONO);
 
   static uint32_t seq = 0;
+  int32_t running_average_volume = 0;
   while (true) {
     // read from i2s
     size_t bytes_read = 0;
@@ -153,6 +157,19 @@ static void i2s_reader_task(void *arg) {
     const uint32_t now_usecs = (uint32_t)esp_timer_get_time();
     const int this_samples = samples_read;
     const uint16_t payload_len = (uint16_t)(this_samples * 2);
+
+
+    // get the average volume of the audio
+    int32_t average_volume = 0;
+    for (int i = 0; i < this_samples; ++i) {
+      average_volume += abs(sample_buf[i]);
+    }
+    average_volume /= this_samples;
+
+    running_average_volume = (running_average_volume * 19 + average_volume) / 20;
+
+    // set the RED LED to the average volume
+    ledcWrite(0, 255 - min(255, 1 * average_volume/running_average_volume));
 
     uint8_t *p = tx_buf;
     *p++ = PKT_SYNC; // sync
@@ -193,6 +210,11 @@ void setup() {
   // USB-CDC serial for binary packets
   Serial.begin(SERIAL_BAUD);
   Serial.setTxBufferSize(32768);
+
+  // set up the RED LED with PWM 
+  ledcAttachPin(RED_LED, 0);
+  ledcSetup(0, 1000, 8);
+  ledcWrite(0, 128);
 
   // I2S driver (always on to maintain timing cadence even in test modes)
   i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
