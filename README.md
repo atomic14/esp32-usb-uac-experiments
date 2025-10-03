@@ -5,7 +5,11 @@
 
 # ESP32 Audio Experiements
 
-A A collection of audio processing tools and hardware for the ESP32.
+A collection of audio processing tools and hardware for the ESP32.
+
+You can watch a video on this project here:
+
+[![Watch the demo on YouTube](https://img.youtube.com/vi/LhZ9pWwnn6s/hqdefault.jpg)](https://youtu.be/LhZ9pWwnn6s)
 
 ## 🎯 Overview
 
